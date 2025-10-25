@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 from PIL import Image
 import easyocr
-import io
 
 color_ranges = {
     'fire': 'B50B0E',
@@ -18,21 +17,22 @@ color_ranges = {
 def hex_to_rgb(hex_code):
     return tuple(int(hex_code[i:i+2], 16) for i in (0, 2, 4))
 
+# 캐싱으로 Reader를 한 번만 로드
 @st.cache_resource
 def load_reader():
     return easyocr.Reader(['en'], gpu=False, verbose=False)
 
 def extract_number(region, reader):
-    gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
-    resized = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
-    results = reader.readtext(resized, allowlist='0123456789', paragraph=False)
+    try:
+        gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
+        resized = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+        results = reader.readtext(resized, allowlist='0123456789', paragraph=False)
 
-    if results:
-        text = results[0][1]
-        try:
+        if results:
+            text = results[0][1]
             return int(text.strip())
-        except:
-            return 0
+    except Exception as e:
+        st.error(f"숫자 추출 오류: {e}")
     return 0
 
 def find_items(img_array, color_range, reader):
@@ -54,10 +54,16 @@ def find_items(img_array, color_range, reader):
                 number_region = img_rgb[y+h:y+int(h*2), x+w:x+int(w*2.3)]
                 count = extract_number(number_region, reader)
                 results[type] = count
+            else:
+                results[type] = 0
+        else:
+            results[type] = 0
 
     return results
 
 # Streamlit UI
+st.set_page_config(page_title="게임 아이템 카운터", page_icon="🎮")
+
 st.title('🎮 게임 아이템 카운터')
 st.write('획득한 속성 아이템 개수를 자동으로 세어드립니다!')
 
@@ -69,42 +75,47 @@ if uploaded_file is not None:
     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     
     # 이미지 표시
-    st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption='업로드된 이미지', use_column_width=True)
+    st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption='업로드된 이미지', use_container_width=True)
     
-    with st.spinner('아이템 개수를 세는 중...'):
-        reader = load_reader()
-        results = find_items(img, color_ranges, reader)
-    
-    # 결과 표시
-    st.success('분석 완료!')
-    
-    col1, col2 = st.columns(2)
-    
-    emoji_map = {
-        'fire': '🔥',
-        'water': '💧',
-        'wind': '💨',
-        'earth': '🌍',
-        'light': '✨',
-        'dark': '🌙'
-    }
-    
-    korean_map = {
-        'fire': '불',
-        'water': '물',
-        'wind': '바람',
-        'earth': '대지',
-        'light': '빛',
-        'dark': '어둠'
-    }
-    
-    for idx, (type, count) in enumerate(results.items()):
-        col = col1 if idx % 2 == 0 else col2
-        with col:
-            st.metric(
-                label=f"{emoji_map.get(type, '')} {korean_map.get(type, type)}", 
-                value=f"{count}개"
-            )
+    with st.spinner('아이템 개수를 세는 중... (처음 실행시 모델 로딩으로 시간이 걸릴 수 있습니다)'):
+        try:
+            reader = load_reader()
+            results = find_items(img, color_ranges, reader)
+            
+            # 결과 표시
+            st.success('✅ 분석 완료!')
+            
+            col1, col2, col3 = st.columns(3)
+            
+            emoji_map = {
+                'fire': '🔥',
+                'water': '💧',
+                'wind': '💨',
+                'earth': '🌍',
+                'light': '✨',
+                'dark': '🌙'
+            }
+            
+            korean_map = {
+                'fire': '불',
+                'water': '물',
+                'wind': '바람',
+                'earth': '대지',
+                'light': '빛',
+                'dark': '어둠'
+            }
+            
+            cols = [col1, col2, col3]
+            for idx, (type, count) in enumerate(results.items()):
+                col = cols[idx % 3]
+                with col:
+                    st.metric(
+                        label=f"{emoji_map.get(type, '')} {korean_map.get(type, type)}", 
+                        value=f"{count}개"
+                    )
+        except Exception as e:
+            st.error(f"분석 중 오류 발생: {e}")
+            st.info("EasyOCR 모델 로딩에 실패했을 수 있습니다. Streamlit Cloud의 메모리 제한 때문일 수 있습니다.")
 
 st.markdown('---')
-st.caption('Made with ❤️ by SSEONG')
+st.caption('Made by ❤️sseong')
