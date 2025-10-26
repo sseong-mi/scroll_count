@@ -94,15 +94,9 @@ def process_image(img):
                 'dark': '어둠'
             }
 
-            # 단일 열로 표시
-            for type, count in results.items():
-                st.metric(
-                    label=f"{emoji_map.get(type, '')} {korean_map.get(type, type)}", 
-                    value=f"{count}개"
-                )
+            counts_str = ''
             
             # cols = [col1, col2, col3]
-            # counts_str = ''
             # for idx, (type, count) in enumerate(results.items()):
             #     col = cols[idx % 3]
             #     with col:
@@ -110,6 +104,12 @@ def process_image(img):
             #             label=f"{emoji_map.get(type, '')} {korean_map.get(type, type)}", 
             #             value=f"{count}개"
             #         )
+            
+            for type, count in results.items():
+                st.metric(
+                    label=f"{emoji_map.get(type, '')} {korean_map.get(type, type)}", 
+                    value=f"{count}개"
+                )
                 counts_str += f"{count}/"
             st.markdown(f'{counts_str}')
         except Exception as e:
