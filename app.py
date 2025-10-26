@@ -135,7 +135,7 @@ with tab2:
         hover_background_color="#FF6B6B",
     )
 
-    if paste_result is not None:
+    if paste_result.image_data is not None:
         pil_image = paste_result.image_data
         st.markdown(f'{type(pil_image)}')
         # img = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
