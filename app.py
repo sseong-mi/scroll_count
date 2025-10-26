@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import easyocr
+from streamlit_paste_button import paste_image_button as pbutton
 
 color_ranges = {
     'fire': 'B50B0E',
@@ -61,20 +62,8 @@ def find_items(img_array, color_range, reader):
 
     return results
 
-# Streamlit UI
-st.set_page_config(page_title="게임 아이템 카운터", page_icon="🎮")
 
-st.title('🎮 게임 아이템 카운터')
-st.write('획득한 속성 아이템 개수를 자동으로 세어드립니다!')
-
-uploaded_file = st.file_uploader("스크린샷을 업로드하세요", type=['png', 'jpg', 'jpeg'])
-
-if uploaded_file is not None:
-    # 이미지 로드
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-    
-    # 이미지 표시
+def process_image(img):
     st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption='업로드된 이미지', use_container_width=True)
     
     with st.spinner('아이템 개수를 세는 중... (처음 실행시 모델 로딩으로 시간이 걸릴 수 있습니다)'):
@@ -106,6 +95,7 @@ if uploaded_file is not None:
             }
             
             cols = [col1, col2, col3]
+            counts_str = ''
             for idx, (type, count) in enumerate(results.items()):
                 col = cols[idx % 3]
                 with col:
@@ -113,9 +103,43 @@ if uploaded_file is not None:
                         label=f"{emoji_map.get(type, '')} {korean_map.get(type, type)}", 
                         value=f"{count}개"
                     )
+                counts_str += f"{count}/"
+            st.markdown(f'{counts_str}')
         except Exception as e:
             st.error(f"분석 중 오류 발생: {e}")
             st.info("EasyOCR 모델 로딩에 실패했을 수 있습니다. Streamlit Cloud의 메모리 제한 때문일 수 있습니다.")
+
+
+# Streamlit UI
+st.set_page_config(page_title="게임 아이템 카운터", page_icon="🎮")
+
+st.title('🎮 게임 아이템 카운터')
+st.write('획득한 속성 아이템 개수를 자동으로 세어드립니다!')
+
+tab1, tab2 = st.tabs(["📁 파일 업로드", "📋 붙여넣기"])
+
+with tab1:
+    st.write('이미지 파일을 업로드하세요')
+    uploaded_file = st.file_uploader("스크린샷을 업로드하세요", type=['png', 'jpg', 'jpeg'])
+
+    if uploaded_file is not None:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        process_image(img)
+
+with tab2:
+    st.write('이미지를 붙여넣으세요')
+    paste_result = pbutton(
+        label='이미지를 붙여넣으세요',
+        background_color="#FF4B4B",
+        hover_background_color="#FF6B6B",
+    )
+
+    if paste_result is not None:
+        pil_image = paste_result.image_data
+        img = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+        process_image(img)
+
 
 st.markdown('---')
 st.caption('Made by ❤️sseong')
