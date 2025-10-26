@@ -136,7 +136,7 @@ with tab2:
     )
 
     if paste_result is not None:
-        pil_image = paste_result.image_data
+        pil_image = Image.fromarray(np.array(paste_result.image_data))
         img = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
         process_image(img)
 
