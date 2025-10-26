@@ -130,7 +130,7 @@ with tab1:
 with tab2:
     st.write('이미지를 붙여넣으세요')
     paste_result = pbutton(
-        label='이미지를 붙여넣으세요',
+        label="📋 여기를 클릭하고 Ctrl+V",
         background_color="#FF4B4B",
         hover_background_color="#FF6B6B",
     )
