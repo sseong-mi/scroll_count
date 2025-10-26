@@ -26,7 +26,7 @@ def load_reader():
 def extract_number(region, reader):
     try:
         gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
-        resized = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+        resized = cv2.resize(gray, None, fx=6, fy=6, interpolation=cv2.INTER_CUBIC)
         results = reader.readtext(resized, allowlist='0123456789', paragraph=False)
 
         if results:
