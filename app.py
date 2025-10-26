@@ -137,8 +137,8 @@ with tab2:
 
     if paste_result.image_data is not None:
         pil_image = paste_result.image_data
-        st.markdown(f'{type(pil_image)}')
-        # img = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+        # st.markdown(f'{type(pil_image)}')
+        img = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
         process_image(img)
 
 
